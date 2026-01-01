@@ -1,0 +1,71 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GrantPilot AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            },
+            colors: {
+              slate: {
+                50: 'rgb(var(--color-neutral-50) / <alpha-value>)',
+                100: 'rgb(var(--color-neutral-100) / <alpha-value>)',
+                200: 'rgb(var(--color-neutral-200) / <alpha-value>)',
+                300: 'rgb(var(--color-neutral-300) / <alpha-value>)',
+                400: 'rgb(var(--color-neutral-400) / <alpha-value>)',
+                500: 'rgb(var(--color-neutral-500) / <alpha-value>)',
+                600: 'rgb(var(--color-neutral-600) / <alpha-value>)',
+                700: 'rgb(var(--color-neutral-700) / <alpha-value>)',
+                800: 'rgb(var(--color-neutral-800) / <alpha-value>)',
+                850: 'rgb(var(--color-neutral-850) / <alpha-value>)',
+                900: 'rgb(var(--color-neutral-900) / <alpha-value>)',
+                950: 'rgb(var(--color-neutral-950) / <alpha-value>)',
+              },
+              indigo: {
+                50: 'rgb(var(--color-primary-50) / <alpha-value>)',
+                100: 'rgb(var(--color-primary-100) / <alpha-value>)',
+                200: 'rgb(var(--color-primary-200) / <alpha-value>)',
+                300: 'rgb(var(--color-primary-300) / <alpha-value>)',
+                400: 'rgb(var(--color-primary-400) / <alpha-value>)',
+                500: 'rgb(var(--color-primary-500) / <alpha-value>)',
+                600: 'rgb(var(--color-primary-600) / <alpha-value>)',
+                700: 'rgb(var(--color-primary-700) / <alpha-value>)',
+                800: 'rgb(var(--color-primary-800) / <alpha-value>)',
+                900: 'rgb(var(--color-primary-900) / <alpha-value>)',
+                950: 'rgb(var(--color-primary-950) / <alpha-value>)',
+              }
+            }
+          }
+        }
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "recharts": "https://aistudiocdn.com/recharts@^3.4.1",
+    "clsx": "https://aistudiocdn.com/clsx@^2.1.1",
+    "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.9.6",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "react-dom": "https://aistudiocdn.com/react-dom@^19.2.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-slate-50 text-slate-900 antialiased">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
