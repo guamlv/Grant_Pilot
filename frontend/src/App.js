@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { BrowserRouter, Routes, Route, NavLink, Navigate } from "react-router-dom";
 import { Dashboard } from "@/pages/Dashboard";
 import { Pipeline } from "@/pages/Pipeline";
@@ -6,13 +6,16 @@ import { GrantDetail } from "@/pages/GrantDetail";
 import { ContentLibrary } from "@/pages/ContentLibrary";
 import { Funders } from "@/pages/Funders";
 import { OutcomeBank } from "@/pages/OutcomeBank";
+import { BudgetBuilder } from "@/pages/BudgetBuilder";
 import { Settings } from "@/pages/Settings";
+import { seedDemoData } from "@/services/api";
 import { 
   LayoutDashboard, 
   GitBranch, 
   FileText, 
   Building, 
   BarChart3, 
+  Calculator,
   Settings as SettingsIcon 
 } from "lucide-react";
 import "@/App.css";
@@ -23,6 +26,7 @@ const NAV_ITEMS = [
   { path: '/content', icon: FileText, label: 'Content Library' },
   { path: '/funders', icon: Building, label: 'Funders' },
   { path: '/outcomes', icon: BarChart3, label: 'Outcome Bank' },
+  { path: '/budgets', icon: Calculator, label: 'Budget Builder' },
   { path: '/settings', icon: SettingsIcon, label: 'Settings' },
 ];
 
