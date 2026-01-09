@@ -27,7 +27,9 @@ export const ContentLibrary = () => {
   }, [category]);
 
   const loadData = () => {
-    getContent(category || undefined).then(res => setItems(res.data || []));
+    getContent(category || undefined)
+      .then(res => setItems(res.data || []))
+      .catch(() => setItems([]));
   };
 
   const filtered = items.filter(i => 
