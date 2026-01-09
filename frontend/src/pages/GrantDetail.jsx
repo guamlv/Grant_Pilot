@@ -341,7 +341,7 @@ export const GrantDetail = () => {
                       <option value="submitted">Submitted</option>
                       <option value="approved">Approved</option>
                     </select>
-                    <button onClick={() => deleteReporting(r.id).then(loadData)} className="p-1 text-gray-400 hover:text-red-500">
+                    <button onClick={() => deleteReporting(r.id).then(loadData).catch(() => {})} className="p-1 text-gray-400 hover:text-red-500">
                       <Trash2 size={14} />
                     </button>
                   </div>
