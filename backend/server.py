@@ -734,6 +734,355 @@ async def import_all(data: ImportRequest):
             await coll.insert_many(items)
     return {"imported": True}
 
+# ----- Budget Templates -----
+BUDGET_TEMPLATES = {
+    "foundation_general": {
+        "name": "Foundation Grant (General)",
+        "line_items": [
+            {"category": "Personnel", "description": "Program Staff Salaries", "amount": 0, "notes": "Include FTE %"},
+            {"category": "Personnel", "description": "Fringe Benefits", "amount": 0, "notes": "Typically 25-35% of salaries"},
+            {"category": "Consultants", "description": "Professional Services", "amount": 0, "notes": ""},
+            {"category": "Supplies", "description": "Program Supplies", "amount": 0, "notes": ""},
+            {"category": "Equipment", "description": "Equipment (if allowed)", "amount": 0, "notes": "Check funder restrictions"},
+            {"category": "Travel", "description": "Local Travel", "amount": 0, "notes": "Mileage, parking"},
+            {"category": "Other", "description": "Printing & Communications", "amount": 0, "notes": ""},
+            {"category": "Other", "description": "Participant Support", "amount": 0, "notes": "Stipends, incentives"},
+            {"category": "Indirect", "description": "Indirect Costs", "amount": 0, "notes": "Check funder cap (often 10-15%)"}
+        ]
+    },
+    "federal_standard": {
+        "name": "Federal Grant (Standard)",
+        "line_items": [
+            {"category": "Personnel", "description": "Key Personnel", "amount": 0, "notes": "PI, Co-PI salaries"},
+            {"category": "Personnel", "description": "Other Personnel", "amount": 0, "notes": "Staff, coordinators"},
+            {"category": "Fringe", "description": "Fringe Benefits", "amount": 0, "notes": "Per organizational rate"},
+            {"category": "Travel", "description": "Domestic Travel", "amount": 0, "notes": "Conference, site visits"},
+            {"category": "Travel", "description": "International Travel", "amount": 0, "notes": "If applicable"},
+            {"category": "Equipment", "description": "Equipment (>$5,000)", "amount": 0, "notes": "Capital equipment"},
+            {"category": "Supplies", "description": "Materials & Supplies", "amount": 0, "notes": ""},
+            {"category": "Contractual", "description": "Subawards/Contracts", "amount": 0, "notes": ""},
+            {"category": "Other", "description": "Other Direct Costs", "amount": 0, "notes": "Participant support, etc."},
+            {"category": "Indirect", "description": "F&A Costs", "amount": 0, "notes": "Per negotiated rate"}
+        ]
+    },
+    "program_specific": {
+        "name": "Program-Specific Budget",
+        "line_items": [
+            {"category": "Personnel", "description": "Program Director (% FTE)", "amount": 0, "notes": ""},
+            {"category": "Personnel", "description": "Program Coordinator", "amount": 0, "notes": ""},
+            {"category": "Personnel", "description": "Direct Service Staff", "amount": 0, "notes": ""},
+            {"category": "Fringe", "description": "Benefits & Taxes", "amount": 0, "notes": ""},
+            {"category": "Program", "description": "Training & Curriculum", "amount": 0, "notes": ""},
+            {"category": "Program", "description": "Client Services", "amount": 0, "notes": "Direct assistance"},
+            {"category": "Program", "description": "Outreach & Recruitment", "amount": 0, "notes": ""},
+            {"category": "Operations", "description": "Facility/Space", "amount": 0, "notes": "If program-specific"},
+            {"category": "Operations", "description": "Technology", "amount": 0, "notes": "Software, hardware"},
+            {"category": "Evaluation", "description": "Data Collection & Reporting", "amount": 0, "notes": ""},
+            {"category": "Indirect", "description": "Administrative Overhead", "amount": 0, "notes": ""}
+        ]
+    },
+    "capacity_building": {
+        "name": "Capacity Building Grant",
+        "line_items": [
+            {"category": "Personnel", "description": "Project Lead Time", "amount": 0, "notes": ""},
+            {"category": "Consultants", "description": "Strategic Planning Consultant", "amount": 0, "notes": ""},
+            {"category": "Consultants", "description": "Technology Consultant", "amount": 0, "notes": ""},
+            {"category": "Consultants", "description": "Fundraising Consultant", "amount": 0, "notes": ""},
+            {"category": "Training", "description": "Staff Professional Development", "amount": 0, "notes": ""},
+            {"category": "Training", "description": "Board Development", "amount": 0, "notes": ""},
+            {"category": "Technology", "description": "Systems & Software", "amount": 0, "notes": "CRM, accounting, etc."},
+            {"category": "Technology", "description": "Website/Digital", "amount": 0, "notes": ""},
+            {"category": "Other", "description": "Materials & Resources", "amount": 0, "notes": ""},
+            {"category": "Indirect", "description": "Administrative Costs", "amount": 0, "notes": ""}
+        ]
+    }
+}
+
+@api_router.get("/budget-templates")
+async def get_budget_templates():
+    """Get available budget templates"""
+    return [{"id": k, "name": v["name"], "line_items_count": len(v["line_items"])} for k, v in BUDGET_TEMPLATES.items()]
+
+@api_router.get("/budget-templates/{template_id}")
+async def get_budget_template(template_id: str):
+    """Get a specific budget template"""
+    if template_id not in BUDGET_TEMPLATES:
+        raise HTTPException(status_code=404, detail="Template not found")
+    return BUDGET_TEMPLATES[template_id]
+
+# ----- Seed Demo Data -----
+@api_router.post("/seed-demo")
+async def seed_demo_data():
+    """Seed comprehensive demo data for showcasing the app"""
+    
+    # Check if data already exists
+    existing = await db.grants.count_documents({})
+    if existing > 5:
+        return {"message": "Demo data already exists", "seeded": False}
+    
+    # Organization Settings
+    await db.settings.update_one(
+        {"id": "default"},
+        {"$set": {
+            "id": "default",
+            "org_name": "Community Bridges",
+            "ein": "12-3456789",
+            "fiscal_year_end": "June 30",
+            "primary_contact": "Maria Rodriguez",
+            "primary_email": "maria@communitybridges.org"
+        }},
+        upsert=True
+    )
+    
+    # Funders
+    funders_data = [
+        {
+            "id": str(uuid.uuid4()),
+            "name": "Robert Wood Johnson Foundation",
+            "website": "https://www.rwjf.org",
+            "portal_url": "https://www.rwjf.org/en/how-we-work/submit-a-proposal.html",
+            "portal_login_notes": "Use maria@communitybridges.org account",
+            "priorities": "Building a Culture of Health. Focus on health equity, community health, childhood obesity prevention.",
+            "restrictions": "No direct service delivery. Must have policy/systems change component.",
+            "typical_award_range": "$100,000 - $500,000",
+            "application_requirements": ["Letter of Inquiry first", "501(c)(3) determination letter", "Board list with affiliations", "Most recent audited financials", "Organizational budget", "Logic model"],
+            "contact_name": "Sarah Chen",
+            "contact_email": "proposals@rwjf.org",
+            "relationship_notes": "Met Sarah at GIA conference 2024. She suggested we apply to Evidence for Action program.",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "name": "The Kresge Foundation",
+            "website": "https://kresge.org",
+            "portal_url": "https://kresge.fluxx.io",
+            "portal_login_notes": "Fluxx portal - password in LastPass",
+            "priorities": "Health, environment, arts & culture, education, human services in American cities.",
+            "restrictions": "Focus on place-based work. Strong preference for organizations in Detroit and select cities.",
+            "typical_award_range": "$150,000 - $400,000",
+            "application_requirements": ["Online application", "Strategic plan", "DEI statement", "990 (3 years)", "Board-approved budget"],
+            "contact_name": "",
+            "contact_email": "",
+            "relationship_notes": "Applied in 2023, declined. Feedback: strengthen evaluation plan.",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "name": "Community Foundation of Greater Metro",
+            "website": "https://cfgm.org",
+            "portal_url": "https://cfgm.org/grants",
+            "portal_login_notes": "Annual cycle - deadline usually March 1",
+            "priorities": "Local community needs - education, health, human services, arts.",
+            "restrictions": "Must serve Greater Metro area. No capital campaigns.",
+            "typical_award_range": "$10,000 - $50,000",
+            "application_requirements": ["Common Grant Application", "501(c)(3) letter", "Current year budget", "Most recent 990"],
+            "contact_name": "James Wilson",
+            "contact_email": "grants@cfgm.org",
+            "relationship_notes": "Long-term funder. Have received 5 grants since 2019. James is very responsive.",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+    ]
+    for f in funders_data:
+        await db.funders.update_one({"name": f["name"]}, {"$set": f}, upsert=True)
+    
+    # Grants
+    grant1_id = str(uuid.uuid4())
+    grant2_id = str(uuid.uuid4())
+    grant3_id = str(uuid.uuid4())
+    grant4_id = str(uuid.uuid4())
+    
+    grants_data = [
+        {
+            "id": grant1_id,
+            "title": "Youth Health Equity Initiative",
+            "funder_name": "Robert Wood Johnson Foundation",
+            "amount_requested": 250000,
+            "amount_awarded": 250000,
+            "stage": "awarded",
+            "deadline": "2024-06-15",
+            "submitted_date": "2024-06-10",
+            "decision_date": "2024-09-01",
+            "grant_period_start": "2025-01-01",
+            "grant_period_end": "2026-12-31",
+            "program": "Youth Health",
+            "notes": "2-year grant. Focus on policy change in school nutrition.",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": grant2_id,
+            "title": "Community Health Worker Training Program",
+            "funder_name": "Community Foundation of Greater Metro",
+            "amount_requested": 45000,
+            "amount_awarded": 45000,
+            "stage": "awarded",
+            "deadline": "2024-03-01",
+            "submitted_date": "2024-02-28",
+            "decision_date": "2024-05-15",
+            "grant_period_start": "2024-07-01",
+            "grant_period_end": "2025-06-30",
+            "program": "Workforce Development",
+            "notes": "Annual renewal likely if outcomes met.",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": grant3_id,
+            "title": "Neighborhood Wellness Hubs",
+            "funder_name": "The Kresge Foundation",
+            "amount_requested": 300000,
+            "amount_awarded": 0,
+            "stage": "submitted",
+            "deadline": "2025-02-15",
+            "submitted_date": "2025-02-10",
+            "decision_date": "",
+            "grant_period_start": "",
+            "grant_period_end": "",
+            "program": "Community Health",
+            "notes": "Strengthened evaluation plan based on previous feedback.",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": grant4_id,
+            "title": "Mental Health First Aid Expansion",
+            "funder_name": "State Department of Health",
+            "amount_requested": 125000,
+            "amount_awarded": 0,
+            "stage": "writing",
+            "deadline": "2025-04-30",
+            "submitted_date": "",
+            "decision_date": "",
+            "grant_period_start": "",
+            "grant_period_end": "",
+            "program": "Mental Health",
+            "notes": "RFP released Jan 2025. Need letters of support from 3 partners.",
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+    ]
+    for g in grants_data:
+        await db.grants.update_one({"id": g["id"]}, {"$set": g}, upsert=True)
+    
+    # Reporting Requirements for awarded grants
+    reports_data = [
+        {"id": str(uuid.uuid4()), "grant_id": grant1_id, "report_type": "financial", "title": "Q1 2025 Financial Report", "description": "Quarterly expenditure report with budget vs actual", "due_date": "2025-04-15", "frequency": "quarterly", "status": "upcoming", "submitted_date": "", "notes": ""},
+        {"id": str(uuid.uuid4()), "grant_id": grant1_id, "report_type": "narrative", "title": "Q1 2025 Progress Report", "description": "Narrative progress on objectives and activities", "due_date": "2025-04-15", "frequency": "quarterly", "status": "upcoming", "submitted_date": "", "notes": ""},
+        {"id": str(uuid.uuid4()), "grant_id": grant1_id, "report_type": "financial", "title": "Q2 2025 Financial Report", "description": "Quarterly expenditure report", "due_date": "2025-07-15", "frequency": "quarterly", "status": "upcoming", "submitted_date": "", "notes": ""},
+        {"id": str(uuid.uuid4()), "grant_id": grant1_id, "report_type": "narrative", "title": "Annual Progress Report", "description": "Comprehensive year 1 progress report", "due_date": "2026-01-31", "frequency": "annual", "status": "upcoming", "submitted_date": "", "notes": "Include outcome data and success stories"},
+        {"id": str(uuid.uuid4()), "grant_id": grant2_id, "report_type": "narrative", "title": "Mid-Year Report", "description": "6-month progress update", "due_date": "2025-01-15", "frequency": "semi-annual", "status": "submitted", "submitted_date": "2025-01-10", "notes": "Submitted on time"},
+        {"id": str(uuid.uuid4()), "grant_id": grant2_id, "report_type": "final", "title": "Final Report", "description": "Final narrative and financial report", "due_date": "2025-07-31", "frequency": "one-time", "status": "upcoming", "submitted_date": "", "notes": "Include photos and testimonials"}
+    ]
+    for r in reports_data:
+        await db.reporting.update_one({"id": r["id"]}, {"$set": r}, upsert=True)
+    
+    # Compliance Items
+    compliance_data = [
+        {"id": str(uuid.uuid4()), "grant_id": grant1_id, "requirement": "Submit any budget modifications over 10% for prior approval", "category": "spending", "deadline": "", "is_completed": False, "notes": ""},
+        {"id": str(uuid.uuid4()), "grant_id": grant1_id, "requirement": "Acknowledge RWJF funding in all publications and materials", "category": "documentation", "deadline": "", "is_completed": True, "notes": "Logo added to all materials"},
+        {"id": str(uuid.uuid4()), "grant_id": grant1_id, "requirement": "Maintain time and effort documentation for all staff", "category": "documentation", "deadline": "", "is_completed": False, "notes": "Using Toggl for tracking"},
+        {"id": str(uuid.uuid4()), "grant_id": grant1_id, "requirement": "Participate in funder learning community calls", "category": "programmatic", "deadline": "", "is_completed": False, "notes": "Monthly calls on 3rd Thursday"},
+        {"id": str(uuid.uuid4()), "grant_id": grant2_id, "requirement": "Track participant demographics using provided template", "category": "documentation", "deadline": "", "is_completed": True, "notes": ""},
+        {"id": str(uuid.uuid4()), "grant_id": grant2_id, "requirement": "Conduct pre/post surveys for all training participants", "category": "programmatic", "deadline": "", "is_completed": True, "notes": "Using SurveyMonkey"}
+    ]
+    for c in compliance_data:
+        await db.compliance.update_one({"id": c["id"]}, {"$set": c}, upsert=True)
+    
+    # Content Library
+    content_data = [
+        {
+            "id": str(uuid.uuid4()),
+            "category": "mission",
+            "title": "Mission Statement",
+            "content": "Community Bridges builds healthier communities by connecting residents to resources, training community health leaders, and advocating for policies that promote equity and wellbeing.",
+            "tags": ["general", "about"],
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "category": "history",
+            "title": "Organization History",
+            "content": "Founded in 2008 by a coalition of community health workers and public health professionals, Community Bridges emerged from a grassroots effort to address health disparities in underserved neighborhoods. What began as a volunteer-run health education program has grown into a comprehensive community health organization serving over 5,000 residents annually across the Greater Metro area. Our growth has been guided by our commitment to community leadership and evidence-based practices.",
+            "tags": ["about", "background"],
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "category": "leadership",
+            "title": "Executive Director Bio",
+            "content": "Maria Rodriguez, MPH, has led Community Bridges as Executive Director since 2018. With over 15 years of experience in community health, Maria previously served as Director of Programs at Metro Health Alliance and as a community health worker herself. She holds a Master of Public Health from State University and serves on the boards of the Community Health Worker Network and the Regional Health Equity Coalition.",
+            "tags": ["leadership", "bio"],
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "category": "programs",
+            "title": "Youth Health Program Description",
+            "content": "Our Youth Health Initiative engages young people ages 12-18 as health leaders in their communities. Through peer education training, advocacy projects, and community health assessments, youth participants develop leadership skills while improving health outcomes in their schools and neighborhoods. The program operates in 8 schools and 3 community centers, reaching 500 youth annually with intensive programming and an additional 2,000 through peer-led activities.",
+            "tags": ["youth", "program"],
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "category": "programs",
+            "title": "Community Health Worker Program",
+            "content": "Our CHW Training Program prepares residents to serve as trusted health resources in their communities. The 120-hour curriculum covers health education, care coordination, advocacy, and professional skills. Graduates receive state certification and ongoing support through our CHW Network. Since 2015, we have trained 180 CHWs, with 85% achieving employment in health-related fields within 6 months of graduation.",
+            "tags": ["chw", "workforce", "program"],
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "category": "financials",
+            "title": "Organizational Budget Summary",
+            "content": "FY2024 Budget: $1.2M\n\nRevenue:\n- Foundation Grants: $650,000 (54%)\n- Government Contracts: $350,000 (29%)\n- Individual Donations: $120,000 (10%)\n- Earned Revenue: $80,000 (7%)\n\nExpenses:\n- Program Services: $900,000 (75%)\n- Administration: $180,000 (15%)\n- Fundraising: $120,000 (10%)",
+            "tags": ["budget", "financials"],
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "category": "boilerplate",
+            "title": "Diversity Statement",
+            "content": "Community Bridges is committed to diversity, equity, and inclusion in all aspects of our work. Our board and staff reflect the communities we serve, with 70% identifying as people of color and 60% having lived experience with the health challenges we address. We actively recruit from communities experiencing health disparities and provide professional development pathways for community members to advance into leadership roles.",
+            "tags": ["dei", "equity"],
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "category": "boilerplate",
+            "title": "Evaluation Approach",
+            "content": "Community Bridges employs a participatory evaluation approach that centers community voice in measuring success. We use mixed methods including quantitative tracking of outputs and outcomes, pre/post surveys, focus groups, and community advisory input. Our evaluation partner, Metro University's Department of Public Health, provides technical assistance and ensures methodological rigor. Data is reviewed quarterly with staff and annually with community stakeholders to inform continuous improvement.",
+            "tags": ["evaluation", "methodology"],
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+    ]
+    for c in content_data:
+        await db.content.update_one({"id": c["id"]}, {"$set": c}, upsert=True)
+    
+    # Outcomes
+    outcomes_data = [
+        {"id": str(uuid.uuid4()), "program": "Youth Health", "metric_type": "output", "title": "Youth trained as peer educators", "value": "120", "time_period": "FY2024", "source": "Program records", "notes": "", "updated_at": datetime.now(timezone.utc).isoformat()},
+        {"id": str(uuid.uuid4()), "program": "Youth Health", "metric_type": "output", "title": "Peer education sessions delivered", "value": "450", "time_period": "FY2024", "source": "Activity logs", "notes": "In schools and community settings", "updated_at": datetime.now(timezone.utc).isoformat()},
+        {"id": str(uuid.uuid4()), "program": "Youth Health", "metric_type": "outcome", "title": "Youth reporting increased health knowledge", "value": "87%", "time_period": "FY2024", "source": "Pre/post surveys", "notes": "n=118", "updated_at": datetime.now(timezone.utc).isoformat()},
+        {"id": str(uuid.uuid4()), "program": "Youth Health", "metric_type": "outcome", "title": "Youth reporting healthy behavior changes", "value": "64%", "time_period": "FY2024", "source": "6-month follow-up survey", "notes": "Primarily nutrition and physical activity", "updated_at": datetime.now(timezone.utc).isoformat()},
+        {"id": str(uuid.uuid4()), "program": "CHW Training", "metric_type": "output", "title": "CHWs trained and certified", "value": "32", "time_period": "FY2024", "source": "Certification records", "notes": "", "updated_at": datetime.now(timezone.utc).isoformat()},
+        {"id": str(uuid.uuid4()), "program": "CHW Training", "metric_type": "outcome", "title": "Graduates employed in health field", "value": "85%", "time_period": "FY2024", "source": "6-month follow-up", "notes": "Within 6 months of graduation", "updated_at": datetime.now(timezone.utc).isoformat()},
+        {"id": str(uuid.uuid4()), "program": "CHW Training", "metric_type": "outcome", "title": "Average wage increase for graduates", "value": "$8,500/year", "time_period": "FY2024", "source": "Alumni survey", "notes": "Compared to pre-training employment", "updated_at": datetime.now(timezone.utc).isoformat()},
+        {"id": str(uuid.uuid4()), "program": "General", "metric_type": "demographic", "title": "Clients identifying as BIPOC", "value": "78%", "time_period": "FY2024", "source": "Intake data", "notes": "", "updated_at": datetime.now(timezone.utc).isoformat()},
+        {"id": str(uuid.uuid4()), "program": "General", "metric_type": "demographic", "title": "Clients with household income below 200% FPL", "value": "82%", "time_period": "FY2024", "source": "Intake data", "notes": "", "updated_at": datetime.now(timezone.utc).isoformat()},
+        {"id": str(uuid.uuid4()), "program": "Youth Health", "metric_type": "testimonial", "title": "Youth participant quote", "value": "\"Before this program, I didn't know I could make a difference in my community's health. Now I've helped my whole family eat better and I'm planning to become a nurse.\" - Jasmine, age 16", "time_period": "2024", "source": "Focus group", "notes": "Permission obtained", "updated_at": datetime.now(timezone.utc).isoformat()}
+    ]
+    for o in outcomes_data:
+        await db.outcomes.update_one({"id": o["id"]}, {"$set": o}, upsert=True)
+    
+    return {
+        "message": "Demo data seeded successfully",
+        "seeded": True,
+        "summary": {
+            "funders": len(funders_data),
+            "grants": len(grants_data),
+            "reports": len(reports_data),
+            "compliance": len(compliance_data),
+            "content": len(content_data),
+            "outcomes": len(outcomes_data)
+        }
+    }
+
 # Include router
 app.include_router(api_router)
 
