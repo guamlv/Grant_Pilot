@@ -44,6 +44,10 @@ export const createBudget = (data) => api.post('/budgets', data);
 export const updateBudget = (id, data) => api.put(`/budgets/${id}`, data);
 export const deleteBudget = (id) => api.delete(`/budgets/${id}`);
 
+// Budget Templates
+export const getBudgetTemplates = () => api.get('/budget-templates');
+export const getBudgetTemplate = (id) => api.get(`/budget-templates/${id}`);
+
 // Outcomes
 export const getOutcomes = (program) => api.get('/outcomes', { params: { program } });
 export const createOutcome = (data) => api.post('/outcomes', data);
