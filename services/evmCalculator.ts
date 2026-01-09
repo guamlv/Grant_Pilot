@@ -1,0 +1,1 @@
+// This file is deprecated. All EVM logic is unified in services/financialService.ts

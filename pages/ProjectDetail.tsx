@@ -1,0 +1,1 @@
+// Deprecated: Use GrantDetail.tsx for deep project analytics.
