@@ -235,14 +235,24 @@ async def root():
     return {"message": "GrantPilot API - Grant Management for Small Nonprofits"}
 
 # ----- Dashboard Metrics -----
+def days_until(date_str):
+    """Calculate days until a date string (YYYY-MM-DD format)"""
+    if not date_str:
+        return None
+    try:
+        target = datetime.strptime(date_str[:10], "%Y-%m-%d")
+        today = datetime.now()
+        return (target - today).days
+    except:
+        return None
+
 @api_router.get("/dashboard")
 async def get_dashboard():
     grants = await db.grants.find({}, {"_id": 0}).to_list(1000)
     reports = await db.reporting.find({}, {"_id": 0}).to_list(1000)
     compliance = await db.compliance.find({}, {"_id": 0}).to_list(1000)
     
-    now = datetime.now(timezone.utc)
-    today = now.strftime("%Y-%m-%d")
+    today = datetime.now().strftime("%Y-%m-%d")
     
     # Pipeline counts
     pipeline = {stage: 0 for stage in ['researching', 'writing', 'submitted', 'pending', 'awarded', 'declined', 'closed']}
@@ -261,43 +271,43 @@ async def get_dashboard():
         # Deadline alerts
         if g.get('deadline') and g.get('stage') in ['researching', 'writing']:
             deadline = g['deadline']
-            if deadline >= today:
-                days_left = (datetime.fromisoformat(deadline) - now).days
+            dl = days_until(deadline)
+            if dl is not None and dl >= 0:
                 upcoming_deadlines.append({
                     'type': 'application',
                     'grant_id': g['id'],
                     'title': g['title'],
                     'date': deadline,
-                    'days_left': days_left
+                    'days_left': dl
                 })
     
     # Reporting deadlines
     for r in reports:
         if r.get('status') in ['upcoming', 'in-progress'] and r.get('due_date'):
             due = r['due_date']
-            if due >= today:
-                days_left = (datetime.fromisoformat(due) - now).days
+            dl = days_until(due)
+            if dl is not None and dl >= 0:
                 upcoming_deadlines.append({
                     'type': 'report',
                     'report_type': r.get('report_type'),
                     'grant_id': r.get('grant_id'),
                     'title': r['title'],
                     'date': due,
-                    'days_left': days_left
+                    'days_left': dl
                 })
     
     # Compliance deadlines
     for c in compliance:
         if not c.get('is_completed') and c.get('deadline'):
             deadline = c['deadline']
-            if deadline >= today:
-                days_left = (datetime.fromisoformat(deadline) - now).days
+            dl = days_until(deadline)
+            if dl is not None and dl >= 0:
                 upcoming_deadlines.append({
                     'type': 'compliance',
                     'grant_id': c.get('grant_id'),
                     'title': c['requirement'],
                     'date': deadline,
-                    'days_left': days_left
+                    'days_left': dl
                 })
     
     # Sort by urgency
