@@ -28,6 +28,37 @@ api_router = APIRouter(prefix="/api")
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Query limit - reasonable for small nonprofits (typically <50 grants)
+MAX_RESULTS = 200
+
+# ============== DATABASE INDEXES ==============
+async def create_indexes():
+    """Create indexes for common query patterns"""
+    try:
+        await db.grants.create_index("id", unique=True)
+        await db.grants.create_index("stage")
+        await db.grants.create_index("deadline")
+        await db.funders.create_index("id", unique=True)
+        await db.funders.create_index("name")
+        await db.content.create_index("id", unique=True)
+        await db.content.create_index("category")
+        await db.reporting.create_index("id", unique=True)
+        await db.reporting.create_index("grant_id")
+        await db.reporting.create_index("due_date")
+        await db.compliance.create_index("id", unique=True)
+        await db.compliance.create_index("grant_id")
+        await db.budgets.create_index("id", unique=True)
+        await db.budgets.create_index("grant_id")
+        await db.outcomes.create_index("id", unique=True)
+        await db.outcomes.create_index("program")
+        logger.info("Database indexes created successfully")
+    except Exception as e:
+        logger.warning(f"Index creation warning (may already exist): {e}")
+
+@app.on_event("startup")
+async def startup():
+    await create_indexes()
+
 # ============== MODELS ==============
 
 # Organization Content Library
