@@ -279,9 +279,9 @@ def days_until(date_str):
 
 @api_router.get("/dashboard")
 async def get_dashboard():
-    grants = await db.grants.find({}, {"_id": 0}).to_list(1000)
-    reports = await db.reporting.find({}, {"_id": 0}).to_list(1000)
-    compliance = await db.compliance.find({}, {"_id": 0}).to_list(1000)
+    grants = await db.grants.find({}, {"_id": 0}).to_list(MAX_RESULTS)
+    reports = await db.reporting.find({}, {"_id": 0}).to_list(MAX_RESULTS)
+    compliance = await db.compliance.find({}, {"_id": 0}).to_list(MAX_RESULTS)
     
     today = datetime.now().strftime("%Y-%m-%d")
     
@@ -363,7 +363,7 @@ async def get_dashboard():
 @api_router.get("/content")
 async def get_content(category: Optional[str] = None):
     query = {"category": category} if category else {}
-    items = await db.content.find(query, {"_id": 0}).to_list(1000)
+    items = await db.content.find(query, {"_id": 0}).to_list(MAX_RESULTS)
     return items
 
 @api_router.post("/content")
@@ -387,7 +387,7 @@ async def delete_content(item_id: str):
 # ----- Funder Profiles -----
 @api_router.get("/funders")
 async def get_funders():
-    return await db.funders.find({}, {"_id": 0}).to_list(1000)
+    return await db.funders.find({}, {"_id": 0}).to_list(MAX_RESULTS)
 
 @api_router.get("/funders/{funder_id}")
 async def get_funder(funder_id: str):
@@ -416,7 +416,7 @@ async def delete_funder(funder_id: str):
 @api_router.get("/grants")
 async def get_grants(stage: Optional[str] = None):
     query = {"stage": stage} if stage else {}
-    return await db.grants.find(query, {"_id": 0}).to_list(1000)
+    return await db.grants.find(query, {"_id": 0}).to_list(MAX_RESULTS)
 
 @api_router.get("/grants/{grant_id}")
 async def get_grant(grant_id: str):
@@ -449,7 +449,7 @@ async def delete_grant(grant_id: str):
 @api_router.get("/reporting")
 async def get_reporting(grant_id: Optional[str] = None):
     query = {"grant_id": grant_id} if grant_id else {}
-    return await db.reporting.find(query, {"_id": 0}).to_list(1000)
+    return await db.reporting.find(query, {"_id": 0}).to_list(MAX_RESULTS)
 
 @api_router.post("/reporting")
 async def create_reporting(req: ReportingRequirementCreate):
@@ -474,7 +474,7 @@ async def delete_reporting(req_id: str):
 @api_router.get("/compliance")
 async def get_compliance(grant_id: Optional[str] = None):
     query = {"grant_id": grant_id} if grant_id else {}
-    return await db.compliance.find(query, {"_id": 0}).to_list(1000)
+    return await db.compliance.find(query, {"_id": 0}).to_list(MAX_RESULTS)
 
 @api_router.post("/compliance")
 async def create_compliance(item: ComplianceItemCreate):
@@ -496,7 +496,7 @@ async def delete_compliance(item_id: str):
 @api_router.get("/budgets")
 async def get_budgets(grant_id: Optional[str] = None):
     query = {"grant_id": grant_id} if grant_id else {}
-    return await db.budgets.find(query, {"_id": 0}).to_list(1000)
+    return await db.budgets.find(query, {"_id": 0}).to_list(MAX_RESULTS)
 
 @api_router.post("/budgets")
 async def create_budget(budget: BudgetTemplateCreate):
@@ -522,7 +522,7 @@ async def delete_budget(budget_id: str):
 @api_router.get("/outcomes")
 async def get_outcomes(program: Optional[str] = None):
     query = {"program": program} if program else {}
-    return await db.outcomes.find(query, {"_id": 0}).to_list(1000)
+    return await db.outcomes.find(query, {"_id": 0}).to_list(MAX_RESULTS)
 
 @api_router.post("/outcomes")
 async def create_outcome(outcome: OutcomeMetricCreate):
@@ -699,9 +699,9 @@ Provide clear, professional, funder-ready content. Be concise but thorough."""
 @api_router.get("/calendar/export")
 async def export_calendar():
     """Generate ICS file with all deadlines"""
-    grants = await db.grants.find({}, {"_id": 0}).to_list(1000)
-    reports = await db.reporting.find({}, {"_id": 0}).to_list(1000)
-    compliance = await db.compliance.find({}, {"_id": 0}).to_list(1000)
+    grants = await db.grants.find({}, {"_id": 0}).to_list(MAX_RESULTS)
+    reports = await db.reporting.find({}, {"_id": 0}).to_list(MAX_RESULTS)
+    compliance = await db.compliance.find({}, {"_id": 0}).to_list(MAX_RESULTS)
     
     events = []
     
@@ -738,13 +738,13 @@ async def export_calendar():
 @api_router.get("/export")
 async def export_all():
     return {
-        "content": await db.content.find({}, {"_id": 0}).to_list(1000),
-        "funders": await db.funders.find({}, {"_id": 0}).to_list(1000),
-        "grants": await db.grants.find({}, {"_id": 0}).to_list(1000),
-        "reporting": await db.reporting.find({}, {"_id": 0}).to_list(1000),
-        "compliance": await db.compliance.find({}, {"_id": 0}).to_list(1000),
-        "budgets": await db.budgets.find({}, {"_id": 0}).to_list(1000),
-        "outcomes": await db.outcomes.find({}, {"_id": 0}).to_list(1000),
+        "content": await db.content.find({}, {"_id": 0}).to_list(MAX_RESULTS),
+        "funders": await db.funders.find({}, {"_id": 0}).to_list(MAX_RESULTS),
+        "grants": await db.grants.find({}, {"_id": 0}).to_list(MAX_RESULTS),
+        "reporting": await db.reporting.find({}, {"_id": 0}).to_list(MAX_RESULTS),
+        "compliance": await db.compliance.find({}, {"_id": 0}).to_list(MAX_RESULTS),
+        "budgets": await db.budgets.find({}, {"_id": 0}).to_list(MAX_RESULTS),
+        "outcomes": await db.outcomes.find({}, {"_id": 0}).to_list(MAX_RESULTS),
         "settings": await db.settings.find({}, {"_id": 0}).to_list(10)
     }
 
