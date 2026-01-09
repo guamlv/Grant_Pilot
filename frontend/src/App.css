@@ -1,34 +1,267 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* GrantPilot Base Styles */
+:root {
+  --color-neutral-50: 244 244 245;
+  --color-neutral-100: 244 244 245;
+  --color-neutral-200: 212 212 216;
+  --color-neutral-300: 212 212 216;
+  --color-neutral-400: 113 113 122;
+  --color-neutral-500: 113 113 122;
+  --color-neutral-900: 9 9 11;
+  --color-primary-500: 255 255 255;
+  --color-primary-900: 9 9 11;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+* {
+  box-sizing: border-box;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f4f4f5;
 }
 
-.App-link {
-    color: #61dafb;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
+}
+
+/* Hide scrollbar for horizontal navigation */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Animation utilities */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInFromTop {
+  from { 
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from { 
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromBottom {
+  from { 
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to { 
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes zoomIn {
+  from { 
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to { 
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-in {
+  animation-duration: 300ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  animation-fill-mode: forwards;
+}
+
+.fade-in {
+  animation-name: fadeIn;
+}
+
+.slide-in-from-top-2 {
+  animation-name: slideInFromTop;
+}
+
+.slide-in-from-top-4 {
+  animation-name: slideInFromTop;
+}
+
+.slide-in-from-top-6 {
+  animation-name: slideInFromTop;
+}
+
+.slide-in-from-right-8 {
+  animation-name: slideInFromRight;
+}
+
+.slide-in-from-bottom-2 {
+  animation-name: slideInFromBottom;
+}
+
+.zoom-in-95 {
+  animation-name: zoomIn;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Duration utilities */
+.duration-200 {
+  animation-duration: 200ms;
+}
+
+.duration-300 {
+  animation-duration: 300ms;
+}
+
+.duration-500 {
+  animation-duration: 500ms;
+}
+
+.duration-700 {
+  animation-duration: 700ms;
+}
+
+/* Focus styles */
+input:focus,
+textarea:focus,
+select:focus,
+button:focus-visible {
+  outline: 2px solid #18181b;
+  outline-offset: 2px;
+}
+
+/* Custom checkbox styling */
+input[type="checkbox"] {
+  cursor: pointer;
+}
+
+input[type="checkbox"]:checked {
+  background-color: #18181b;
+  border-color: #18181b;
+}
+
+/* Form styling */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* Select dropdown */
+select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 1rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+}
+
+/* Table styles */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+/* Loading pulse */
+.loading-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Recharts overrides for dark tooltips */
+.recharts-default-tooltip {
+  background-color: #18181b !important;
+  border: 1px solid #27272a !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+.recharts-tooltip-label {
+  color: #71717a !important;
+  font-weight: 700 !important;
+  font-size: 10px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.1em !important;
+}
+
+.recharts-tooltip-item {
+  color: #fafafa !important;
+  font-weight: 600 !important;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .text-6xl {
+    font-size: 2.5rem;
+  }
+  
+  .text-5xl {
+    font-size: 2rem;
+  }
+  
+  .text-4xl {
+    font-size: 1.75rem;
+  }
+  
+  .px-32 {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
 }
