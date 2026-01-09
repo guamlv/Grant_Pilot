@@ -80,6 +80,7 @@ function App() {
                 <Route path="/content" element={<ContentLibrary />} />
                 <Route path="/funders" element={<Funders />} />
                 <Route path="/outcomes" element={<OutcomeBank />} />
+                <Route path="/budgets" element={<BudgetBuilder />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
