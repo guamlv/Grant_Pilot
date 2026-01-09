@@ -31,6 +31,11 @@ const NAV_ITEMS = [
 ];
 
 function App() {
+  // Seed demo data on first load
+  useEffect(() => {
+    seedDemoData().catch(() => {});
+  }, []);
+
   return (
     <div className="App">
       <BrowserRouter>
