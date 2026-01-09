@@ -5,6 +5,28 @@ import { MetricCard } from '@/components/MetricCard';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { TrendingUp, Activity, ArrowUpRight } from 'lucide-react';
 
+// Custom Tooltip component moved outside to prevent re-creation on each render
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-black text-white p-6 rounded-[2rem] shadow-2xl border border-zinc-800">
+        <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">{label}</p>
+        <div className="space-y-2">
+          <div className="flex justify-between gap-8 items-center">
+            <span className="text-xs font-bold text-zinc-400">Actual Spend</span>
+            <span className="text-sm font-black text-white">{formatCurrency(payload[0]?.value || 0)}</span>
+          </div>
+          <div className="flex justify-between gap-8 items-center">
+            <span className="text-xs font-bold text-zinc-400">Projection</span>
+            <span className="text-sm font-black text-zinc-400">{formatCurrency(payload[1]?.value || 0)}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 export const FinancialsSection = ({ grant }) => {
   const [rawFin, setRawFin] = useState([]);
 
@@ -22,27 +44,6 @@ export const FinancialsSection = ({ grant }) => {
   }, [grant, rawFin]);
 
   const lastFin = fins[fins.length - 1];
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-black text-white p-6 rounded-[2rem] shadow-2xl border border-zinc-800 animate-in zoom-in-95 duration-200">
-          <p className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-2">{label}</p>
-          <div className="space-y-2">
-            <div className="flex justify-between gap-8 items-center">
-              <span className="text-xs font-bold text-zinc-400">Actual Spend</span>
-              <span className="text-sm font-black text-white">{formatCurrency(payload[0]?.value || 0)}</span>
-            </div>
-            <div className="flex justify-between gap-8 items-center">
-              <span className="text-xs font-bold text-zinc-400">Projection</span>
-              <span className="text-sm font-black text-zinc-400">{formatCurrency(payload[1]?.value || 0)}</span>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
 
   return (
     <div className="grid lg:grid-cols-4 gap-12" data-testid="financials-section">
