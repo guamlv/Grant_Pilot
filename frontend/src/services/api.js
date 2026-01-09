@@ -1,82 +1,68 @@
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
+const api = axios.create({ baseURL: `${BACKEND_URL}/api` });
 
-const api = axios.create({
-  baseURL: API,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+// Dashboard
+export const getDashboard = () => api.get('/dashboard');
+
+// Content Library
+export const getContent = (category) => api.get('/content', { params: { category } });
+export const createContent = (data) => api.post('/content', data);
+export const updateContent = (id, data) => api.put(`/content/${id}`, data);
+export const deleteContent = (id) => api.delete(`/content/${id}`);
+
+// Funders
+export const getFunders = () => api.get('/funders');
+export const getFunder = (id) => api.get(`/funders/${id}`);
+export const createFunder = (data) => api.post('/funders', data);
+export const updateFunder = (id, data) => api.put(`/funders/${id}`, data);
+export const deleteFunder = (id) => api.delete(`/funders/${id}`);
 
 // Grants
-export const getGrants = () => api.get('/grants');
+export const getGrants = (stage) => api.get('/grants', { params: { stage } });
 export const getGrant = (id) => api.get(`/grants/${id}`);
 export const createGrant = (data) => api.post('/grants', data);
 export const updateGrant = (id, data) => api.put(`/grants/${id}`, data);
 export const deleteGrant = (id) => api.delete(`/grants/${id}`);
 
-// Tasks
-export const getTasks = (grantId) => api.get('/tasks', { params: { grant_id: grantId } });
-export const createTask = (data) => api.post('/tasks', data);
-export const updateTask = (id, isCompleted) => api.put(`/tasks/${id}`, null, { params: { is_completed: isCompleted } });
-export const deleteTask = (id) => api.delete(`/tasks/${id}`);
+// Reporting
+export const getReporting = (grantId) => api.get('/reporting', { params: { grant_id: grantId } });
+export const createReporting = (data) => api.post('/reporting', data);
+export const updateReporting = (id, status, submittedDate) => api.put(`/reporting/${id}`, null, { params: { status, submitted_date: submittedDate } });
+export const deleteReporting = (id) => api.delete(`/reporting/${id}`);
 
-// Financials
-export const getFinancials = (grantId) => api.get('/financials', { params: { grant_id: grantId } });
-export const createFinancial = (data) => api.post('/financials', data);
-export const deleteFinancial = (id) => api.delete(`/financials/${id}`);
+// Compliance
+export const getCompliance = (grantId) => api.get('/compliance', { params: { grant_id: grantId } });
+export const createCompliance = (data) => api.post('/compliance', data);
+export const updateCompliance = (id, isCompleted) => api.put(`/compliance/${id}`, null, { params: { is_completed: isCompleted } });
+export const deleteCompliance = (id) => api.delete(`/compliance/${id}`);
 
-// Risks
-export const getRisks = (grantId) => api.get('/risks', { params: { grant_id: grantId } });
-export const createRisk = (data) => api.post('/risks', data);
-export const deleteRisk = (id) => api.delete(`/risks/${id}`);
+// Budgets
+export const getBudgets = (grantId) => api.get('/budgets', { params: { grant_id: grantId } });
+export const createBudget = (data) => api.post('/budgets', data);
+export const updateBudget = (id, data) => api.put(`/budgets/${id}`, data);
+export const deleteBudget = (id) => api.delete(`/budgets/${id}`);
 
-// Checklist
-export const getChecklist = (grantId) => api.get('/checklist', { params: { grant_id: grantId } });
-export const createChecklistItem = (data) => api.post('/checklist', data);
-export const updateChecklistItem = (id, isCompleted) => api.put(`/checklist/${id}`, null, { params: { is_completed: isCompleted } });
-export const deleteChecklistItem = (id) => api.delete(`/checklist/${id}`);
-
-// Budget Items
-export const getBudgetItems = (grantId) => api.get('/budget-items', { params: { grant_id: grantId } });
-export const createBudgetItem = (data) => api.post('/budget-items', data);
-export const deleteBudgetItem = (id) => api.delete(`/budget-items/${id}`);
-
-// Proposals
-export const getProposals = (grantId) => api.get('/proposals', { params: { grant_id: grantId } });
-export const createProposal = (data) => api.post('/proposals', data);
-export const updateProposal = (id, content) => api.put(`/proposals/${id}`, null, { params: { content } });
-export const deleteProposal = (id) => api.delete(`/proposals/${id}`);
-
-// Reports
-export const getReports = (grantId) => api.get('/reports', { params: { grant_id: grantId } });
-export const createReport = (data) => api.post('/reports', data);
-export const deleteReport = (id) => api.delete(`/reports/${id}`);
-
-// Documents
-export const getDocuments = (grantId) => api.get('/documents', { params: { grant_id: grantId } });
-export const createDocument = (data) => api.post('/documents', data);
-export const deleteDocument = (id) => api.delete(`/documents/${id}`);
+// Outcomes
+export const getOutcomes = (program) => api.get('/outcomes', { params: { program } });
+export const createOutcome = (data) => api.post('/outcomes', data);
+export const updateOutcome = (id, data) => api.put(`/outcomes/${id}`, data);
+export const deleteOutcome = (id) => api.delete(`/outcomes/${id}`);
 
 // Settings
 export const getSettings = () => api.get('/settings');
 export const updateSettings = (data) => api.put('/settings', data);
 
-// AI Endpoints
-export const draftProposal = (data) => api.post('/ai/draft-proposal', data);
-export const generateReport = (data) => api.post('/ai/generate-report', data);
-export const parseDocument = (data) => api.post('/ai/parse-document', data);
-export const analyzeRisks = (data) => api.post('/ai/analyze-risks', data);
-export const portfolioAnalysis = (data) => api.post('/ai/portfolio-analysis', data);
-export const grantDiscovery = (data) => api.post('/ai/grant-discovery', data);
-export const budgetForecast = (data) => api.post('/ai/budget-forecast', data);
+// AI
+export const extractAward = (data) => api.post('/ai/extract-award', data);
+export const aiDraft = (data) => api.post('/ai/draft', data);
 
-// Data Management
-export const seedData = () => api.post('/seed');
+// Calendar
+export const getCalendarEvents = () => api.get('/calendar/export');
+
+// Data
 export const exportData = () => api.get('/export');
 export const importData = (data) => api.post('/import', data);
-export const clearAllData = () => api.delete('/clear-all');
 
 export default api;
