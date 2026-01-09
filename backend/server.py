@@ -108,20 +108,21 @@ class FunderProfileCreate(BaseModel):
 # Grant Pipeline
 class Grant(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    title: str
+    title: str = Field(..., min_length=1, max_length=200)
     funder_id: Optional[str] = None
-    funder_name: str = ""
-    amount_requested: float = 0
-    amount_awarded: float = 0
+    funder_name: str = Field(default="", max_length=200)
+    amount_requested: float = Field(default=0, ge=0)
+    amount_awarded: float = Field(default=0, ge=0)
     stage: Literal['researching', 'writing', 'submitted', 'pending', 'awarded', 'declined', 'closed'] = 'researching'
     deadline: str = ""
     submitted_date: str = ""
     decision_date: str = ""
     grant_period_start: str = ""
     grant_period_end: str = ""
-    program: str = ""
-    notes: str = ""
+    program: str = Field(default="", max_length=200)
+    notes: str = Field(default="", max_length=5000)
     created_at: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+
 
 class GrantCreate(BaseModel):
     title: str
