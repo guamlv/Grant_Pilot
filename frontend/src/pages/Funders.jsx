@@ -18,7 +18,9 @@ export const Funders = () => {
   }, []);
 
   const loadData = () => {
-    getFunders().then(res => setFunders(res.data || []));
+    getFunders()
+      .then(res => setFunders(res.data || []))
+      .catch(() => setFunders([]));
   };
 
   const filtered = funders.filter(f => 
