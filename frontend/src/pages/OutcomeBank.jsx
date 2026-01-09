@@ -22,7 +22,9 @@ export const OutcomeBank = () => {
   }, []);
 
   const loadData = () => {
-    getOutcomes().then(res => setOutcomes(res.data || []));
+    getOutcomes()
+      .then(res => setOutcomes(res.data || []))
+      .catch(() => setOutcomes([]));
   };
 
   const filtered = outcomes.filter(o => {
