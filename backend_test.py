@@ -1,18 +1,19 @@
 import requests
 import sys
 import json
-from datetime import datetime
+import base64
+from datetime import datetime, timedelta
 
 class GrantPilotAPITester:
     def __init__(self, base_url="https://readersmatch.preview.emergentagent.com"):
         self.base_url = base_url
         self.tests_run = 0
         self.tests_passed = 0
-        self.created_grant_id = None
+        self.created_ids = {}  # Store created resource IDs for cleanup
 
-    def run_test(self, name, method, endpoint, expected_status, data=None, timeout=30):
+    def run_test(self, name, method, endpoint, expected_status, data=None, params=None):
         """Run a single API test"""
-        url = f"{self.base_url}/{endpoint}"
+        url = f"{self.base_url}/api/{endpoint}"
         headers = {'Content-Type': 'application/json'}
 
         self.tests_run += 1
@@ -21,25 +22,20 @@ class GrantPilotAPITester:
         
         try:
             if method == 'GET':
-                response = requests.get(url, headers=headers, timeout=timeout)
+                response = requests.get(url, headers=headers, params=params)
             elif method == 'POST':
-                response = requests.post(url, json=data, headers=headers, timeout=timeout)
+                response = requests.post(url, json=data, headers=headers)
             elif method == 'PUT':
-                response = requests.put(url, json=data, headers=headers, timeout=timeout)
+                response = requests.put(url, json=data, headers=headers)
             elif method == 'DELETE':
-                response = requests.delete(url, headers=headers, timeout=timeout)
+                response = requests.delete(url, headers=headers)
 
             success = response.status_code == expected_status
             if success:
                 self.tests_passed += 1
                 print(f"✅ Passed - Status: {response.status_code}")
                 try:
-                    response_data = response.json()
-                    if isinstance(response_data, dict) and len(str(response_data)) < 500:
-                        print(f"   Response: {response_data}")
-                    elif isinstance(response_data, list):
-                        print(f"   Response: List with {len(response_data)} items")
-                    return success, response_data
+                    return success, response.json()
                 except:
                     return success, {}
             else:
@@ -48,197 +44,396 @@ class GrantPilotAPITester:
                     error_detail = response.json()
                     print(f"   Error: {error_detail}")
                 except:
-                    print(f"   Error: {response.text[:200]}")
+                    print(f"   Error: {response.text}")
                 return False, {}
 
         except Exception as e:
             print(f"❌ Failed - Error: {str(e)}")
             return False, {}
 
-    def test_health_check(self):
-        """Test health check endpoint"""
-        return self.run_test(
-            "Health Check",
+    def test_dashboard(self):
+        """Test dashboard metrics API"""
+        success, response = self.run_test(
+            "Dashboard Metrics",
             "GET",
-            "api/",
+            "dashboard",
             200
         )
+        if success:
+            required_keys = ['pipeline', 'total_pending', 'total_awarded', 'upcoming_deadlines']
+            for key in required_keys:
+                if key not in response:
+                    print(f"   ⚠️  Missing key: {key}")
+                    return False
+            print(f"   📊 Pipeline: {response.get('pipeline', {})}")
+            print(f"   💰 Total Pending: ${response.get('total_pending', 0):,}")
+            print(f"   🏆 Total Awarded: ${response.get('total_awarded', 0):,}")
+        return success
 
-    def test_seed_data(self):
-        """Seed demo data"""
-        return self.run_test(
-            "Seed Demo Data",
-            "POST",
-            "api/seed",
-            200
-        )
-
-    def test_get_grants(self):
-        """Test getting all grants"""
-        return self.run_test(
-            "Get All Grants",
-            "GET",
-            "api/grants",
-            200
-        )
-
-    def test_create_grant(self):
-        """Test creating a new grant"""
+    def test_grants_crud(self):
+        """Test grants CRUD operations"""
+        # Create grant
         grant_data = {
-            "title": "Test Grant",
-            "funder": "Test Funder",
-            "award_amount": 100000,
-            "status": "Prospect",
-            "description": "A test grant for API testing"
+            "title": "Test Grant for Education",
+            "funder_name": "Test Foundation",
+            "amount_requested": 50000,
+            "deadline": "2025-06-30",
+            "stage": "researching",
+            "program": "Youth Education"
         }
+        
         success, response = self.run_test(
             "Create Grant",
             "POST",
-            "api/grants",
+            "grants",
             200,
             data=grant_data
         )
-        if success and 'id' in response:
-            self.created_grant_id = response['id']
-            print(f"   Created grant ID: {self.created_grant_id}")
-        return success, response
-
-    def test_get_specific_grant(self):
-        """Test getting a specific grant"""
-        if not self.created_grant_id:
-            print("❌ Skipping - No grant ID available")
-            return False, {}
         
-        return self.run_test(
-            "Get Specific Grant",
+        if not success:
+            return False
+            
+        grant_id = response.get('id')
+        if grant_id:
+            self.created_ids['grant'] = grant_id
+            print(f"   📝 Created grant ID: {grant_id}")
+        
+        # List grants
+        success, response = self.run_test(
+            "List Grants",
             "GET",
-            f"api/grants/{self.created_grant_id}",
+            "grants",
             200
         )
-
-    def test_create_task(self):
-        """Test creating a task"""
-        if not self.created_grant_id:
-            print("❌ Skipping - No grant ID available")
-            return False, {}
+        
+        if not success:
+            return False
             
-        task_data = {
-            "grant_id": self.created_grant_id,
-            "description": "Test task",
-            "due_date": "2025-12-31"
-        }
-        return self.run_test(
-            "Create Task",
-            "POST",
-            "api/tasks",
+        # Update grant stage
+        update_data = {"stage": "awarded", "amount_awarded": 45000}
+        success, response = self.run_test(
+            f"Update Grant Stage",
+            "PUT",
+            f"grants/{grant_id}",
             200,
-            data=task_data
+            data=update_data
         )
+        
+        return success
 
-    def test_get_tasks(self):
-        """Test getting tasks for a grant"""
-        if not self.created_grant_id:
-            print("❌ Skipping - No grant ID available")
-            return False, {}
-            
-        return self.run_test(
-            "Get Tasks for Grant",
+    def test_content_library(self):
+        """Test content library operations"""
+        content_data = {
+            "category": "mission",
+            "title": "Mission Statement",
+            "content": "We serve communities by providing educational opportunities and resources to underserved youth.",
+            "tags": ["general", "mission"]
+        }
+        
+        success, response = self.run_test(
+            "Create Content",
+            "POST",
+            "content",
+            200,
+            data=content_data
+        )
+        
+        if success:
+            content_id = response.get('id')
+            if content_id:
+                self.created_ids['content'] = content_id
+                print(f"   📄 Created content ID: {content_id}")
+        
+        # List content
+        success, response = self.run_test(
+            "List Content",
             "GET",
-            f"api/tasks?grant_id={self.created_grant_id}",
+            "content",
             200
         )
+        
+        return success
 
-    def test_ai_draft_proposal(self):
-        """Test AI draft proposal endpoint"""
-        proposal_data = {
-            "grant_title": "Test Grant",
-            "section": "Abstract",
-            "context": "A technology grant",
-            "tone": "Professional"
+    def test_funders(self):
+        """Test funder operations"""
+        funder_data = {
+            "name": "Gates Foundation",
+            "website": "https://gatesfoundation.org",
+            "priorities": "Global health, education, poverty alleviation",
+            "typical_award_range": "$100K - $2M",
+            "application_requirements": ["LOI required", "Full proposal", "Budget narrative"]
         }
-        return self.run_test(
-            "AI Draft Proposal",
+        
+        success, response = self.run_test(
+            "Create Funder",
             "POST",
-            "api/ai/draft-proposal",
+            "funders",
             200,
-            data=proposal_data,
-            timeout=60  # AI calls may take longer
+            data=funder_data
         )
-
-    def test_delete_grant(self):
-        """Test deleting a grant"""
-        if not self.created_grant_id:
-            print("❌ Skipping - No grant ID available")
-            return False, {}
-            
-        return self.run_test(
-            "Delete Grant",
-            "DELETE",
-            f"api/grants/{self.created_grant_id}",
+        
+        if success:
+            funder_id = response.get('id')
+            if funder_id:
+                self.created_ids['funder'] = funder_id
+                print(f"   🏢 Created funder ID: {funder_id}")
+        
+        # List funders
+        success, response = self.run_test(
+            "List Funders",
+            "GET",
+            "funders",
             200
         )
+        
+        return success
 
-    def test_settings_endpoints(self):
-        """Test settings endpoints"""
-        # Get settings
-        success1, _ = self.run_test(
+    def test_reporting_requirements(self):
+        """Test reporting requirements"""
+        if 'grant' not in self.created_ids:
+            print("❌ No grant ID available for reporting test")
+            return False
+            
+        grant_id = self.created_ids['grant']
+        
+        reporting_data = {
+            "grant_id": grant_id,
+            "report_type": "financial",
+            "title": "Q1 Financial Report",
+            "description": "Quarterly financial report showing expenditures and remaining balance",
+            "due_date": "2025-03-31",
+            "frequency": "quarterly"
+        }
+        
+        success, response = self.run_test(
+            "Create Reporting Requirement",
+            "POST",
+            "reporting",
+            200,
+            data=reporting_data
+        )
+        
+        if success:
+            report_id = response.get('id')
+            if report_id:
+                self.created_ids['reporting'] = report_id
+                print(f"   📋 Created reporting requirement ID: {report_id}")
+        
+        # List reporting requirements for grant
+        success, response = self.run_test(
+            "List Reporting Requirements",
+            "GET",
+            "reporting",
+            200,
+            params={"grant_id": grant_id}
+        )
+        
+        return success
+
+    def test_outcomes(self):
+        """Test outcome metrics"""
+        outcome_data = {
+            "program": "Youth Services",
+            "metric_type": "output",
+            "title": "Youth Served",
+            "value": "1,500",
+            "time_period": "2024 Academic Year",
+            "source": "Program database"
+        }
+        
+        success, response = self.run_test(
+            "Create Outcome Metric",
+            "POST",
+            "outcomes",
+            200,
+            data=outcome_data
+        )
+        
+        if success:
+            outcome_id = response.get('id')
+            if outcome_id:
+                self.created_ids['outcome'] = outcome_id
+                print(f"   📈 Created outcome ID: {outcome_id}")
+        
+        # List outcomes
+        success, response = self.run_test(
+            "List Outcomes",
+            "GET",
+            "outcomes",
+            200
+        )
+        
+        return success
+
+    def test_ai_award_extraction(self):
+        """Test AI award document extraction"""
+        if 'grant' not in self.created_ids:
+            print("❌ No grant ID available for AI extraction test")
+            return False
+            
+        grant_id = self.created_ids['grant']
+        
+        # Sample award document text
+        sample_document = """
+        GRANT AWARD NOTIFICATION
+        
+        Congratulations! Your grant application has been approved.
+        
+        Award Details:
+        - Grant Amount: $45,000
+        - Grant Period: January 1, 2025 - December 31, 2025
+        - Funder: Test Foundation
+        
+        Reporting Requirements:
+        1. Quarterly Financial Reports due 30 days after each quarter end
+        2. Annual Narrative Report due January 31, 2026
+        3. Final Financial Report due February 28, 2026
+        
+        Compliance Requirements:
+        - All expenditures must be pre-approved for amounts over $5,000
+        - Maintain detailed records for 7 years
+        - Acknowledge funder in all publications
+        """
+        
+        # Encode as base64
+        encoded_doc = base64.b64encode(sample_document.encode('utf-8')).decode('utf-8')
+        
+        extraction_data = {
+            "grant_id": grant_id,
+            "base64_data": encoded_doc,
+            "mime_type": "text/plain",
+            "filename": "award_letter.txt"
+        }
+        
+        success, response = self.run_test(
+            "AI Award Document Extraction",
+            "POST",
+            "ai/extract-award",
+            200,
+            data=extraction_data
+        )
+        
+        if success:
+            print(f"   🤖 Created {response.get('created_reports', 0)} reporting requirements")
+            print(f"   🤖 Created {response.get('created_compliance', 0)} compliance items")
+        
+        return success
+
+    def test_settings(self):
+        """Test organization settings"""
+        success, response = self.run_test(
             "Get Settings",
             "GET",
-            "api/settings",
+            "settings",
             200
         )
         
-        # Update settings
-        settings_data = {
-            "theme": "zen",
-            "user_name": "Test User"
-        }
-        success2, _ = self.run_test(
-            "Update Settings",
-            "PUT",
-            "api/settings",
-            200,
-            data=settings_data
+        if success:
+            # Update settings
+            settings_data = {
+                "id": "default",
+                "org_name": "Test Nonprofit Organization",
+                "ein": "12-3456789",
+                "fiscal_year_end": "12-31",
+                "primary_contact": "John Doe",
+                "primary_email": "john@testnonprofit.org"
+            }
+            
+            success, response = self.run_test(
+                "Update Settings",
+                "PUT",
+                "settings",
+                200,
+                data=settings_data
+            )
+        
+        return success
+
+    def test_calendar_export(self):
+        """Test calendar export functionality"""
+        success, response = self.run_test(
+            "Calendar Export",
+            "GET",
+            "calendar/export",
+            200
         )
         
-        return success1 and success2
+        if success and 'events' in response:
+            print(f"   📅 Found {len(response['events'])} calendar events")
+        
+        return success
+
+    def cleanup(self):
+        """Clean up created test data"""
+        print(f"\n🧹 Cleaning up test data...")
+        
+        # Delete in reverse order of dependencies
+        cleanup_order = [
+            ('reporting', 'reporting'),
+            ('outcome', 'outcomes'),
+            ('content', 'content'),
+            ('funder', 'funders'),
+            ('grant', 'grants')
+        ]
+        
+        for key, endpoint in cleanup_order:
+            if key in self.created_ids:
+                resource_id = self.created_ids[key]
+                try:
+                    success, _ = self.run_test(
+                        f"Delete {key}",
+                        "DELETE",
+                        f"{endpoint}/{resource_id}",
+                        200
+                    )
+                    if success:
+                        print(f"   ✅ Deleted {key}: {resource_id}")
+                except:
+                    print(f"   ⚠️  Failed to delete {key}: {resource_id}")
 
 def main():
-    print("🚀 Starting GrantPilot Intelligence Suite API Tests")
-    print("=" * 60)
+    print("🚀 Starting GrantPilot API Tests")
+    print("=" * 50)
     
     tester = GrantPilotAPITester()
     
-    # Test sequence
+    # Run all tests
     tests = [
-        ("Health Check", tester.test_health_check),
-        ("Seed Demo Data", tester.test_seed_data),
-        ("Get All Grants", tester.test_get_grants),
-        ("Create Grant", tester.test_create_grant),
-        ("Get Specific Grant", tester.test_get_specific_grant),
-        ("Create Task", tester.test_create_task),
-        ("Get Tasks", tester.test_get_tasks),
-        ("AI Draft Proposal", tester.test_ai_draft_proposal),
-        ("Settings Endpoints", tester.test_settings_endpoints),
-        ("Delete Grant", tester.test_delete_grant),
+        ("Dashboard", tester.test_dashboard),
+        ("Grants CRUD", tester.test_grants_crud),
+        ("Content Library", tester.test_content_library),
+        ("Funders", tester.test_funders),
+        ("Reporting Requirements", tester.test_reporting_requirements),
+        ("Outcomes", tester.test_outcomes),
+        ("AI Award Extraction", tester.test_ai_award_extraction),
+        ("Settings", tester.test_settings),
+        ("Calendar Export", tester.test_calendar_export)
     ]
     
+    failed_tests = []
+    
     for test_name, test_func in tests:
+        print(f"\n{'='*20} {test_name} {'='*20}")
         try:
-            test_func()
+            if not test_func():
+                failed_tests.append(test_name)
         except Exception as e:
-            print(f"❌ {test_name} failed with exception: {str(e)}")
+            print(f"❌ {test_name} failed with exception: {e}")
+            failed_tests.append(test_name)
     
-    # Print final results
-    print("\n" + "=" * 60)
-    print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
+    # Cleanup
+    tester.cleanup()
     
-    if tester.tests_passed == tester.tests_run:
-        print("🎉 All tests passed!")
-        return 0
-    else:
-        print(f"⚠️  {tester.tests_run - tester.tests_passed} tests failed")
+    # Print results
+    print(f"\n{'='*50}")
+    print(f"📊 Test Results: {tester.tests_passed}/{tester.tests_run} tests passed")
+    
+    if failed_tests:
+        print(f"❌ Failed tests: {', '.join(failed_tests)}")
         return 1
+    else:
+        print("✅ All tests passed!")
+        return 0
 
 if __name__ == "__main__":
     sys.exit(main())
