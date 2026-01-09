@@ -27,10 +27,15 @@ export const Pipeline = () => {
   }, []);
 
   const loadData = () => {
-    Promise.all([getGrants(), getFunders()]).then(([g, f]) => {
-      setGrants(g.data || []);
-      setFunders(f.data || []);
-    });
+    Promise.all([getGrants(), getFunders()])
+      .then(([g, f]) => {
+        setGrants(g.data || []);
+        setFunders(f.data || []);
+      })
+      .catch(() => {
+        setGrants([]);
+        setFunders([]);
+      });
   };
 
   const filtered = grants.filter(g => 
