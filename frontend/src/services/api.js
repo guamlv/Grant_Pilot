@@ -68,5 +68,6 @@ export const getCalendarEvents = () => api.get('/calendar/export');
 // Data
 export const exportData = () => api.get('/export');
 export const importData = (data) => api.post('/import', data);
+export const seedDemoData = () => api.post('/seed-demo');
 
 export default api;
